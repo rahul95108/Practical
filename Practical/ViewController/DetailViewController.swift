@@ -12,12 +12,21 @@ class DetailViewController: UIViewController, UITextFieldDelegate, UINavigationC
     @IBOutlet weak var txtEmail: UITextField!
     
     var totalCount = NSInteger()
+    var strName = NSString()
+    var isUpdate = Bool()
+    var dictData = NSDictionary()
     let imagePicker = UIImagePickerController()
     
     // MARK: - UIView Life Cycle Methods -
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        if isUpdate{
+            txtName.text = self.dictData.value(forKey: "name") as? String
+            txtEmail.text = self.dictData.value(forKey: "email") as? String
+            imgView.image = UIImage(contentsOfFile: self.dictData.value(forKey: "filepath") as! String)
+            btnAddPhoto.setTitle("", for: UIControlState.normal)
+        }
         imagePicker.delegate = self
     }
 
@@ -100,8 +109,8 @@ class DetailViewController: UIViewController, UITextFieldDelegate, UINavigationC
     // MARK: - Add Core Data -
     
     func addData(){
-        let strName = String(format: "image%x.jpg",totalCount)
-        saveImage(str: strName)
+        self.strName = String(format: "image%x.jpg",totalCount) as NSString
+        saveImage(str: self.strName as String)
     }
     
     func saveImage(str:String) {
@@ -109,17 +118,17 @@ class DetailViewController: UIViewController, UITextFieldDelegate, UINavigationC
         do {
             let documentDirectory = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
             let fileURL = documentDirectory.appendingPathComponent(str)
-            print(fileURL)
             if let imageData = UIImageJPEGRepresentation(imgView.image!, 0.5) {
                 try imageData.write(to: fileURL)
             }
-            strData(str: str)
+            strData(str: fileURL.absoluteString)
         } catch {
             print(error)
         }
     }
     
     func strData(str:String){
+        self.strName = str.replacingOccurrences(of: "file://", with: "") as NSString
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
             return
         }
@@ -129,7 +138,7 @@ class DetailViewController: UIViewController, UITextFieldDelegate, UINavigationC
         let person = NSManagedObject(entity: entity!, insertInto: managedContext)
         person.setValue(txtName.text, forKey: "name")
         person.setValue(txtEmail.text, forKey: "email")
-        person.setValue(str, forKey: "filepath")
+        person.setValue(self.strName, forKey: "filepath")
         do {
             try managedContext.save()
         } catch let error as NSError {
